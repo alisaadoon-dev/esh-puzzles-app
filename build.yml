@@ -1,0 +1,44 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Create Android project files
+        run: flutter create --org com.eshpuzzles --project-name esh_puzzles --platforms android .
+
+      - name: Set app name
+        run: sed -i 's/android:label="[^"]*"/android:label="عش الألغاز"/' android/app/src/main/AndroidManifest.xml
+
+      - name: Build APK
+        run: |
+          flutter pub get
+          flutter build apk --release
+
+      - name: Publish APK to Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk esh-puzzles.apk
+          gh release delete latest --yes --cleanup-tag || true
+          sleep 5
+          gh release create latest esh-puzzles.apk --title "أحدث نسخة" --notes "بناء رقم ${{ github.run_number }}"
