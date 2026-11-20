@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -197,22 +198,22 @@ const Map<String, String> kWorldEmoji = {
 // بيانات الألغاز
 // ============================================================
 const List<List<String>> kEmojiPairs = [
-  ['🐶', '🐱'],
-  ['🍎', '🍅'],
-  ['🌲', '🌳'],
-  ['😀', '😃'],
-  ['🐸', '🐢'],
-  ['⭐', '🌟'],
-  ['🍊', '🍑'],
-  ['🐝', '🐞'],
-  ['🌙', '⭐'],
-  ['🐵', '🙈'],
-  ['🚗', '🚕'],
-  ['🍪', '🍩'],
-  ['🐔', '🐤'],
-  ['🍌', '🌽'],
-  ['🎈', '🎀'],
-  ['🐟', '🐠'],
+  ['🐶', '🐱'], ['🍎', '🍅'], ['🌲', '🌳'], ['😀', '😃'], ['🐸', '🐢'],
+  ['⭐', '🌟'], ['🍊', '🍑'], ['🐝', '🐞'], ['🌙', '⭐'], ['🐵', '🙈'],
+  ['🚗', '🚕'], ['🍪', '🍩'], ['🐔', '🐤'], ['🍌', '🌽'], ['🎈', '🎀'],
+  ['🐟', '🐠'], ['🐮', '🐷'], ['🐭', '🐹'], ['🐰', '🐻'], ['🦁', '🐯'],
+  ['🐼', '🐨'], ['🐧', '🐦'], ['🦆', '🦢'], ['🐴', '🦄'], ['🐫', '🐪'],
+  ['🐘', '🦏'], ['🐳', '🐋'], ['🦀', '🦞'], ['🐌', '🐛'], ['🦋', '🐝'],
+  ['🍇', '🫐'], ['🍓', '🍒'], ['🍉', '🍈'], ['🍐', '🍏'], ['🥕', '🌶'],
+  ['🥦', '🥬'], ['🍔', '🍞'], ['🍕', '🧀'], ['🍦', '🍧'], ['🧁', '🎂'],
+  ['🍫', '🍬'], ['🥛', '☕'], ['⚽', '🏀'], ['🏈', '🏉'], ['🎾', '🥎'],
+  ['🚌', '🚎'], ['🚓', '🚑'], ['✈', '🚀'], ['🚲', '🛴'], ['⛵', '🚤'],
+  ['🌞', '🌝'], ['☁', '⛅'], ['🌈', '🌂'], ['❄', '💧'], ['🔥', '💥'],
+  ['🌷', '🌹'], ['🌻', '🌼'], ['🍀', '☘'], ['🍁', '🍂'], ['🌵', '🌴'],
+  ['🎁', '📦'], ['🔑', '🗝'], ['⏰', '⌚'], ['📕', '📗'], ['✏', '🖍'],
+  ['🎩', '👒'], ['👟', '👞'], ['🧦', '🧤'], ['🕶', '👓'], ['🏠', '🏡'],
+  ['🔔', '🔕'], ['💡', '🔦'], ['🎸', '🎻'], ['🥁', '🎺'], ['🧸', '🪆'],
+  ['😺', '😸'], ['😊', '🙂'], ['😴', '😪'], ['🤓', '😎'], ['🥳', '🤩'],
 ];
 
 const Map<String, List<List<String>>> kLetterPairs = {
@@ -226,8 +227,19 @@ const Map<String, List<List<String>>> kLetterPairs = {
     ['ط', 'ظ'],
     ['ع', 'غ'],
     ['ف', 'ق'],
+    ['ح', 'خ'],
+    ['ن', 'ت'],
+    ['ي', 'ب'],
+    ['ه', 'ة'],
+    ['أ', 'إ'],
+    ['ك', 'ل'],
+    ['و', 'ؤ'],
     ['6', '9'],
     ['3', '8'],
+    ['1', '7'],
+    ['2', '5'],
+    ['٢', '٣'],
+    ['٦', '٧'],
   ],
   'en': [
     ['b', 'd'],
@@ -236,8 +248,16 @@ const Map<String, List<List<String>>> kLetterPairs = {
     ['O', 'Q'],
     ['E', 'F'],
     ['u', 'v'],
+    ['C', 'G'],
+    ['P', 'R'],
+    ['M', 'W'],
+    ['i', 'j'],
+    ['h', 'n'],
+    ['a', 'o'],
+    ['V', 'Y'],
     ['6', '9'],
     ['3', '8'],
+    ['1', '7'],
   ],
   'fr': [
     ['b', 'd'],
@@ -246,14 +266,42 @@ const Map<String, List<List<String>>> kLetterPairs = {
     ['O', 'Q'],
     ['E', 'F'],
     ['é', 'è'],
+    ['C', 'G'],
+    ['P', 'R'],
+    ['à', 'â'],
+    ['ç', 'c'],
+    ['h', 'n'],
+    ['a', 'o'],
     ['6', '9'],
     ['3', '8'],
+    ['1', '7'],
   ],
 };
 
 const List<String> kCountEmojis = [
   '🍎', '🌟', '🐞', '🍓', '🦋', '🐟', '🌸', '🍄', '🐤', '🎈',
+  '🐸', '🍌', '🚗', '⚽', '🐝', '🍩', '🌙', '🐢', '🍇', '🐰',
+  '🌻', '🍪', '🐧', '🔔', '🎁', '🍉', '🐙', '🦄', '🍒', '🐶',
 ];
+
+// ============================================================
+// الأصوات
+// ============================================================
+class Sfx {
+  static final Map<String, AudioPlayer> _players = {};
+  static bool muted = false;
+
+  static Future<void> play(String name) async {
+    if (muted) return;
+    try {
+      final p = _players.putIfAbsent(name, AudioPlayer.new);
+      await p.stop();
+      await p.play(AssetSource('sounds/$name.wav'));
+    } catch (_) {
+      // لا نوقف اللعبة إذا فشل الصوت
+    }
+  }
+}
 
 // ============================================================
 // التخزين: العملات والنجوم واللغة والصديق
@@ -264,6 +312,13 @@ class Store extends ChangeNotifier {
 
   int get coins => _p.getInt('coins') ?? kStartCoins;
   String get lang => _p.getString('lang') ?? 'ar';
+  bool get muted => _p.getBool('muted') ?? false;
+
+  Future<void> toggleMute() async {
+    await _p.setBool('muted', !muted);
+    Sfx.muted = muted;
+    notifyListeners();
+  }
   String get buddy => _p.getString('buddy') ?? 'owl';
   String get rival => buddy == 'owl' ? 'fox' : 'owl';
   bool get buddyChosen => _p.getBool('buddyChosen') ?? false;
@@ -312,6 +367,22 @@ class Store extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// يسحب عنصراً من مجموعة محفوظة، فلا يتكرر حتى تنتهي كل العناصر
+  int draw(String key, int size, Random r) {
+    final k = 'deck_${key}_$size';
+    var deck = (_p.getStringList(k) ?? const <String>[])
+        .map(int.tryParse)
+        .whereType<int>()
+        .where((i) => i >= 0 && i < size)
+        .toList();
+    if (deck.isEmpty) {
+      deck = List<int>.generate(size, (i) => i)..shuffle(r);
+    }
+    final v = deck.removeLast();
+    _p.setStringList(k, deck.map((e) => '$e').toList());
+    return v;
+  }
+
   bool codeUsed(String c) => (_p.getStringList('codes') ?? const []).contains(c);
 
   Future<void> markCode(String c) async {
@@ -339,7 +410,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   final prefs = await SharedPreferences.getInstance();
-  runApp(EshApp(store: Store(prefs)));
+  final store = Store(prefs);
+  Sfx.muted = store.muted;
+  runApp(EshApp(store: store));
 }
 
 class EshApp extends StatelessWidget {
@@ -437,6 +510,7 @@ class _Btn3DState extends State<Btn3D> {
         setState(() => _down = false);
         if (widget.onTap != null) {
           HapticFeedback.lightImpact();
+          Sfx.play('tap');
           widget.onTap!();
         }
       },
@@ -817,6 +891,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     await s.markCode(c);
     await s.addCoins(reward);
+    Sfx.play('coin');
     if (mounted) {
       showSnack(context, s.t('codeOk').replaceAll('{n}', '$reward'));
     }
@@ -848,11 +923,19 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             children: [
-              const Row(
+              Row(
                 children: [
-                  CoinCounter(),
-                  Spacer(),
-                  LangButton(),
+                  const CoinCounter(),
+                  const Spacer(),
+                  IconButton(
+                    icon: Icon(
+                      s.muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                    onPressed: s.toggleMute,
+                  ),
+                  const LangButton(),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1167,6 +1250,9 @@ class LockedWorld extends StatelessWidget {
 // ============================================================
 enum PType { diff, letter, count }
 
+/// كيف تختلف الخانة المختلفة: شكل آخر، أو أصغر، أو مقلوبة
+enum OddStyle { other, small, rotated }
+
 class Puzzle {
   Puzzle({
     required this.type,
@@ -1175,7 +1261,9 @@ class Puzzle {
     required this.answer,
     this.options = const [],
     this.target = '',
+    this.style = OddStyle.other,
   });
+  final OddStyle style;
   final PType type;
   final List<String> cells; // خانات الشبكة ('' = خانة فارغة)
   final int cols;
@@ -1185,44 +1273,62 @@ class Puzzle {
 }
 
 class PuzzleGen {
-  PuzzleGen(this.level, this.lang);
+  PuzzleGen(this.level, this.lang, this.store);
   final int level;
   final String lang;
+  final Store store;
   final Random _r = Random();
+  late final List<PType> _order = _makeOrder();
 
   int get _cols => level <= 3 ? 3 : (level <= 8 ? 4 : 5);
 
-  static const List<PType> _order = [
-    PType.diff,
-    PType.count,
-    PType.letter,
-    PType.diff,
-    PType.count,
-  ];
+  // ترتيب أنواع الألغاز يختلف في كل مرة
+  List<PType> _makeOrder() {
+    final o = <PType>[PType.diff, PType.diff, PType.count, PType.letter];
+    o.add(PType.values[_r.nextInt(PType.values.length)]);
+    o.shuffle(_r);
+    return o;
+  }
 
   Puzzle make(int index) {
     final t = _order[index % _order.length];
     return switch (t) {
-      PType.diff => _diff(kEmojiPairs, PType.diff),
-      PType.letter => _diff(kLetterPairs[lang] ?? kLetterPairs['ar']!, PType.letter),
+      PType.diff => _diff(),
+      PType.letter => _letter(),
       PType.count => _count(),
     };
   }
 
-  Puzzle _diff(List<List<String>> pairs, PType type) {
-    final pair = pairs[_r.nextInt(pairs.length)];
-    final swap = _r.nextBool();
-    final common = swap ? pair[1] : pair[0];
-    final odd = swap ? pair[0] : pair[1];
+  Puzzle _grid(String common, String odd, PType type, OddStyle style) {
     final cols = _cols;
     final n = cols * cols;
     final ans = _r.nextInt(n);
     final cells = List<String>.generate(n, (i) => i == ans ? odd : common);
-    return Puzzle(type: type, cells: cells, cols: cols, answer: ans);
+    return Puzzle(
+        type: type, cells: cells, cols: cols, answer: ans, style: style);
+  }
+
+  Puzzle _diff() {
+    final pair = kEmojiPairs[store.draw('pair', kEmojiPairs.length, _r)];
+    final swap = _r.nextBool();
+    final common = swap ? pair[1] : pair[0];
+    // من المرحلة الثالثة: أحياناً تكون المختلفة أصغر أو مقلوبة
+    final roll = level >= 3 ? _r.nextInt(5) : 0;
+    if (roll == 3) return _grid(common, common, PType.diff, OddStyle.small);
+    if (roll == 4) return _grid(common, common, PType.diff, OddStyle.rotated);
+    return _grid(common, swap ? pair[0] : pair[1], PType.diff, OddStyle.other);
+  }
+
+  Puzzle _letter() {
+    final list = kLetterPairs[lang] ?? kLetterPairs['ar']!;
+    final pair = list[store.draw('letter_$lang', list.length, _r)];
+    final swap = _r.nextBool();
+    return _grid(swap ? pair[1] : pair[0], swap ? pair[0] : pair[1],
+        PType.letter, OddStyle.other);
   }
 
   Puzzle _count() {
-    final target = kCountEmojis[_r.nextInt(kCountEmojis.length)];
+    final target = kCountEmojis[store.draw('count', kCountEmojis.length, _r)];
     var other = target;
     while (other == target) {
       other = kCountEmojis[_r.nextInt(kCountEmojis.length)];
@@ -1292,7 +1398,8 @@ class _PlayScreenState extends State<PlayScreen> {
     super.didChangeDependencies();
     if (!_started) {
       _started = true;
-      _gen = PuzzleGen(widget.level, StoreScope.read(context).lang);
+      final st = StoreScope.read(context);
+      _gen = PuzzleGen(widget.level, st.lang, st);
       _newPuzzle();
     }
   }
@@ -1327,6 +1434,7 @@ class _PlayScreenState extends State<PlayScreen> {
     _moodTimer?.cancel();
     if (ok) {
       HapticFeedback.mediumImpact();
+      Sfx.play('correct');
       setState(() {
         _busy = true;
         _correct++;
@@ -1349,6 +1457,7 @@ class _PlayScreenState extends State<PlayScreen> {
       }
     } else {
       HapticFeedback.heavyImpact();
+      Sfx.play('wrong');
       setState(() {
         _hearts--;
         _mistakes++;
@@ -1377,6 +1486,7 @@ class _PlayScreenState extends State<PlayScreen> {
     final nav = Navigator.of(context);
     final int stars = won ? max(1, min(3, 3 - _mistakes)) : 0;
     final coins = won ? _correct * 2 + stars * 10 : _correct * 2;
+    Sfx.play(won ? 'win' : 'lose');
     await s.saveStars(widget.level, stars);
     await s.addCoins(coins);
     if (!mounted) return;
@@ -1403,6 +1513,7 @@ class _PlayScreenState extends State<PlayScreen> {
         return;
       }
       if (!mounted) return;
+      Sfx.play('coin');
       setState(() => _wrongOpts.add(wrongLeft.first));
     } else {
       final candidates = <int>[
@@ -1415,6 +1526,7 @@ class _PlayScreenState extends State<PlayScreen> {
         return;
       }
       if (!mounted) return;
+      Sfx.play('coin');
       setState(() => _hidden.addAll(candidates.take(candidates.length ~/ 2 + 1)));
     }
   }
@@ -1427,7 +1539,19 @@ class _PlayScreenState extends State<PlayScreen> {
     };
   }
 
-  Widget _tile(String v, List<Color> colors, double fontSize) {
+  Widget _tile(String v, List<Color> colors, double fontSize,
+      [OddStyle style = OddStyle.other]) {
+    Widget text = Text(
+      v,
+      style: TextStyle(
+        fontSize: style == OddStyle.small ? fontSize * 0.55 : fontSize,
+        fontWeight: FontWeight.w900,
+        color: kInk,
+      ),
+    );
+    if (style == OddStyle.rotated) {
+      text = Transform.rotate(angle: pi, child: text);
+    }
     return Container(
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -1444,14 +1568,7 @@ class _PlayScreenState extends State<PlayScreen> {
         fit: BoxFit.scaleDown,
         child: Padding(
           padding: const EdgeInsets.all(4),
-          child: Text(
-            v,
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: FontWeight.w900,
-              color: kInk,
-            ),
-          ),
+          child: text,
         ),
       ),
     );
@@ -1490,6 +1607,7 @@ class _PlayScreenState extends State<PlayScreen> {
                           ? _okTile
                           : (_wrong.contains(i) ? _badTile : _normalTile),
                       fs,
+                      i == p.answer ? p.style : OddStyle.other,
                     ),
                   ),
                 ),
@@ -1527,7 +1645,7 @@ class _PlayScreenState extends State<PlayScreen> {
                           child: c.isEmpty
                               ? const SizedBox.shrink()
                               : FittedBox(
-                                  child: Text(c, style: const TextStyle(fontSize: 38)),
+                                  child: Text(c, style: const TextStyle(fontSize: 56)),
                                 ),
                         ),
                     ],
@@ -1639,7 +1757,7 @@ class _PlayScreenState extends State<PlayScreen> {
                     child: Critter(
                       kind: s.buddy,
                       mood: _buddyMood,
-                      height: 100,
+                      height: 130,
                       bubble: _buddyLine,
                       bubbleWidth: 120,
                     ),
@@ -1664,7 +1782,7 @@ class _PlayScreenState extends State<PlayScreen> {
                     child: Critter(
                       kind: s.rival,
                       mood: _rivalMood,
-                      height: 95,
+                      height: 125,
                       bubble: _rivalLine,
                       bubbleWidth: 120,
                     ),
