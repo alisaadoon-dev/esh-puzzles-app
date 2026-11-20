@@ -41,6 +41,18 @@ jobs:
               }
           }
           EOF
+      - name: Use Maven Central for Gradle
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/repos.gradle <<'EOF'
+          beforeSettings { settings ->
+              settings.pluginManagement.repositories {
+                  mavenCentral()
+                  gradlePluginPortal()
+                  google()
+              }
+          }
+          EOF          
       - name: Build APK
         run: |
           flutter pub add audioplayers shared_preferences
