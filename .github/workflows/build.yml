@@ -28,7 +28,19 @@ jobs:
 
       - name: Set app name
         run: sed -i 's/android:label="[^"]*"/android:label="عش الألغاز"/' android/app/src/main/AndroidManifest.xml
+      - name: Fix install on Xiaomi
+        run: |
+          F=$(ls android/app/build.gradle* | head -1)
+          cat >> $F <<'EOF'
 
+          android {
+              packaging {
+                  jniLibs {
+                      useLegacyPackaging = true
+                  }
+              }
+          }
+          EOF
       - name: Build APK
         run: |
           flutter pub add audioplayers shared_preferences
