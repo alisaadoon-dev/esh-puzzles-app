@@ -1,0 +1,22 @@
+name: esh_puzzles
+description: "Esh Puzzles - kids puzzle game"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # shared_preferences و audioplayers يضيفهما ملف البناء تلقائياً
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/characters/
