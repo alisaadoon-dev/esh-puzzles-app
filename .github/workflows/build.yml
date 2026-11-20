@@ -31,28 +31,13 @@ jobs:
       - name: Fix install on Xiaomi
         run: |
           F=$(ls android/app/build.gradle* | head -1)
-          cat >> $F <<'EOF'
+          echo 'android { packaging { jniLibs { useLegacyPackaging = true } } }' >> $F
 
-          android {
-              packaging {
-                  jniLibs {
-                      useLegacyPackaging = true
-                  }
-              }
-          }
-          EOF
       - name: Use Maven Central for Gradle
         run: |
           mkdir -p ~/.gradle/init.d
-          cat > ~/.gradle/init.d/repos.gradle <<'EOF'
-          beforeSettings { settings ->
-              settings.pluginManagement.repositories {
-                  mavenCentral()
-                  gradlePluginPortal()
-                  google()
-              }
-          }
-          EOF          
+          echo 'beforeSettings { s -> s.pluginManagement.repositories { mavenCentral(); gradlePluginPortal(); google() } }' > ~/.gradle/init.d/repos.gradle      
+    
       - name: Build APK
         run: |
           flutter pub add audioplayers shared_preferences
