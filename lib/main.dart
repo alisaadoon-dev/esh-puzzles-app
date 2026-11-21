@@ -27,13 +27,69 @@ const Color kOrangeBottom = Color(0xFFE8590C);
 const Color kGreyTop = Color(0xFF8A8FA3);
 const Color kGreyBottom = Color(0xFF4B5063);
 
-const int kLevels = 30; // مراحل عالم الغابة
+/// مجموعات لغز "أيها لا ينتمي"
+const kGroups = <List<String>>[
+  ['🍎', '🍌', '🍇', '🍓', '🍉', '🍒', '🍊', '🍍'], // فواكه
+  ['🐶', '🐱', '🐰', '🦁', '🐯', '🐮', '🐷', '🐵'], // حيوانات
+  ['🚗', '🚕', '🚌', '🚑', '🚒', '🚓', '🚜', '🏎'], // سيارات
+  ['🐟', '🐠', '🐙', '🦀', '🐬', '🐳', '🦑', '🐡'], // بحر
+  ['⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🎱', '🏓'], // كرات
+  ['🥕', '🥦', '🌽', '🍆', '🥒', '🧅', '🥔', '🥬'], // خضار
+  ['☀️', '🌧', '⛄', '🌈', '⛅', '🌪', '❄️', '⚡'], // طقس
+  ['🎸', '🎹', '🥁', '🎺', '🎻', '🎷', '🪕'], // آلات موسيقية
+  ['👕', '👖', '👗', '🧦', '🧢', '👟', '🧤', '🧣'], // ملابس
+  ['🐞', '🐝', '🦋', '🐜', '🐛', '🦗', '🕷', '🐌'], // حشرات
+];
+
+/// مجموعات كائنات حية لا نخلطها معاً (حيوانات، بحر، حشرات)
+const kLivingGroups = {1, 3, 9};
+
+const int kWorldSize = 30; // مراحل كل عالم
+const List<String> kWorlds = ['forest', 'desert', 'sea', 'castle', 'space'];
+const int kLevels = kWorldSize * 5; // كل المراحل في العوالم الخمسة
+
+int worldOf(int level) => min(max(0, (level - 1) ~/ kWorldSize), kWorlds.length - 1);
+bool isBoss(int level) => level % kWorldSize == 0;
+
+/// صعوبة المرحلة: الغابة تبدأ سهلة، وكل عالم بعدها يبدأ متوسطاً ويصل للأصعب
+int diffLevel(int level) {
+  final w = worldOf(level);
+  if (w == 0) return level;
+  final local = (level - 1) % kWorldSize;
+  return min(30, 10 + w + (local * 20) ~/ (kWorldSize - 1));
+}
+
+/// ألوان وأشكال كل عالم
+const Map<String, List<Color>> kWorldColors = {
+  'forest': [Color(0xFF1F7A4D), Color(0xFF0A2A1C)],
+  'desert': [Color(0xFFE8A23A), Color(0xFF7A3E0C)],
+  'sea': [Color(0xFF1E88E5), Color(0xFF0A2547)],
+  'castle': [Color(0xFF8E44AD), Color(0xFF2C0F3D)],
+  'space': [Color(0xFF1A1A4E), Color(0xFF02020F)],
+};
+const Map<String, String> kWorldIcon = {
+  'forest': '🌲', 'desert': '🐪', 'sea': '🐙', 'castle': '🏰', 'space': '🚀',
+};
+const Map<String, List<String>> kWorldItems = {
+  'forest': ['🌲', '🍄', '🐿', '🦉', '🍂', '🌰', '🦔', '🐻'],
+  'desert': ['🐪', '🌵', '🦂', '🌴', '☀️', '🏜', '🦎', '🐫'],
+  'sea': ['🐙', '🐠', '🐳', '🦀', '🐚', '🐬', '🦑', '🐢'],
+  'castle': ['🏰', '👑', '🗝', '🛡', '🐉', '💎', '🧙', '🦄'],
+  'space': ['🚀', '🪐', '⭐', '🌙', '👽', '🛸', '☄️', '🌍'],
+};
 
 /// عدد الأسئلة يزيد مع المراحل
-int questionsFor(int level) => level < 10 ? 5 : (level < 20 ? 6 : 7);
+int questionsFor(int level) {
+  final d = diffLevel(level);
+  final n = d < 10 ? 5 : (d < 20 ? 6 : 7);
+  return isBoss(level) ? n + 3 : n; // مرحلة الزعيم أطول
+}
 
 /// من المرحلة 11 يصير لكل سؤال وقت محدد (بالثواني)
-int secondsFor(int level) => level < 11 ? 0 : max(8, 25 - (level - 11));
+int secondsFor(int level) {
+  final d = diffLevel(level);
+  return d < 11 ? 0 : max(8, 25 - (d - 11));
+}
 const int kHintCost = 10; // سعر التلميح
 const int kSwitchCost = 50; // سعر تبديل الصديق
 const int kStartCoins = 30;
@@ -109,6 +165,11 @@ const Map<String, Map<String, String>> kStrings = {
     'daily': 'لغز اليوم',
     'dailyDone': 'رجع باچر!',
     'qTF': 'صح لو غلط؟',
+    'worlds': "العوالم",
+    'boss': "الزعيم",
+    'finishPrev': "أكمل العالم السابق أولاً",
+    'qOdd': "منو الغريب بينهم؟",
+    'qNumSeq': "شنو الرقم الناقص؟",
     'breakTitle': 'وقت الراحة!',
     'breakText': 'لعبت كثير اليوم يا بطل، البومة تعبانة وتريد تنام 😴 نكمل باچر!',
     'limit': 'وقت اللعب اليومي',
@@ -197,6 +258,11 @@ const Map<String, Map<String, String>> kStrings = {
     'daily': 'Daily puzzle',
     'dailyDone': 'Come back tomorrow!',
     'qTF': 'True or false?',
+    'worlds': "Worlds",
+    'boss': "Boss",
+    'finishPrev': "Finish the previous world first",
+    'qOdd': "Which one doesn't belong?",
+    'qNumSeq': "Which number is missing?",
     'breakTitle': 'Break time!',
     'breakText': "You played a lot today, champ! Your buddy is sleepy 😴 See you tomorrow!",
     'limit': 'Daily play time',
@@ -285,6 +351,11 @@ const Map<String, Map<String, String>> kStrings = {
     'daily': 'Énigme du jour',
     'dailyDone': 'Reviens demain !',
     'qTF': 'Vrai ou faux ?',
+    'worlds': "Mondes",
+    'boss': "Le boss",
+    'finishPrev': "Termine d'abord le monde précédent",
+    'qOdd': "Lequel n'est pas de la famille ?",
+    'qNumSeq': "Quel nombre manque ?",
     'breakTitle': "C'est la pause !",
     'breakText': "Tu as beaucoup joué aujourd'hui ! Ton ami a sommeil 😴 À demain !",
     'limit': 'Temps de jeu par jour',
@@ -373,6 +444,11 @@ const Map<String, Map<String, String>> kStrings = {
     'daily': "Acertijo del día",
     'dailyDone': "¡Vuelve mañana!",
     'qTF': "¿Verdadero o falso?",
+    'worlds': "Mundos",
+    'boss': "Jefe",
+    'finishPrev': "Termina primero el mundo anterior",
+    'qOdd': "¿Cuál no pertenece al grupo?",
+    'qNumSeq': "¿Qué número falta?",
     'breakTitle': "¡Hora de descansar!",
     'breakText': "¡Hoy jugaste mucho, campeón! Tu amigo tiene sueño 😴 ¡Hasta mañana!",
     'limit': "Tiempo de juego diario",
@@ -461,6 +537,11 @@ const Map<String, Map<String, String>> kStrings = {
     'daily': "Enigma do dia",
     'dailyDone': "Volte amanhã!",
     'qTF': "Verdadeiro ou falso?",
+    'worlds': "Mundos",
+    'boss': "Chefão",
+    'finishPrev': "Termine o mundo anterior primeiro",
+    'qOdd': "Qual não pertence ao grupo?",
+    'qNumSeq': "Qual número falta?",
     'breakTitle': "Hora de descansar!",
     'breakText': "Você jogou muito hoje, campeão! Seu amigo está com sono 😴 Até amanhã!",
     'limit': "Tempo de jogo por dia",
@@ -549,6 +630,11 @@ const Map<String, Map<String, String>> kStrings = {
     'daily': "Günün bilmecesi",
     'dailyDone': "Yarın gel!",
     'qTF': "Doğru mu yanlış mı?",
+    'worlds': "Dünyalar",
+    'boss': "Patron",
+    'finishPrev': "Önce önceki dünyayı bitir",
+    'qOdd': "Hangisi gruba ait değil?",
+    'qNumSeq': "Hangi sayı eksik?",
     'breakTitle': "Mola zamanı!",
     'breakText': "Bugün çok oynadın şampiyon! Arkadaşının uykusu geldi 😴 Yarın görüşürüz!",
     'limit': "Günlük oyun süresi",
@@ -637,6 +723,11 @@ const Map<String, Map<String, String>> kStrings = {
     'daily': "Teka-teki harian",
     'dailyDone': "Kembali besok!",
     'qTF': "Benar atau salah?",
+    'worlds': "Dunia",
+    'boss': "Bos",
+    'finishPrev': "Selesaikan dunia sebelumnya dulu",
+    'qOdd': "Mana yang bukan kelompoknya?",
+    'qNumSeq': "Angka berapa yang hilang?",
     'breakTitle': "Waktunya istirahat!",
     'breakText': "Hari ini kamu sudah banyak bermain, juara! Temanmu mengantuk 😴 Sampai besok!",
     'limit': "Waktu main harian",
@@ -1350,7 +1441,9 @@ class _GameBackgroundState extends State<GameBackground>
         fit: StackFit.expand,
         children: [
           if (widget.image != null) ...[
-            Image.asset(widget.image!, fit: BoxFit.cover),
+            Image.asset(widget.image!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
             Container(color: const Color(0x33000000)),
           ],
           RepaintBoundary(
@@ -2244,7 +2337,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!ok || !mounted) return;
     }
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const MapScreen()),
+      MaterialPageRoute<void>(builder: (_) => const WorldsScreen()),
     );
   }
 
@@ -2315,91 +2408,120 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Widget _mini(String emoji, String label, Color top, Color bottom, VoidCallback onTap) {
+    return SizedBox(
+      width: 100,
+      child: Column(
+        children: [
+          Btn3D(
+            width: 66,
+            height: 58,
+            radius: 18,
+            top: top,
+            bottom: bottom,
+            onTap: onTap,
+            child: Text(emoji, style: const TextStyle(fontSize: 28)),
+          ),
+          const SizedBox(height: 2),
+          Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+
+  void _open(Widget page) =>
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
+
   @override
   Widget build(BuildContext context) {
     final s = StoreScope.of(context);
     return Scaffold(
       body: GameBackground(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: Column(
             children: [
               Row(
                 children: [
                   const CoinCounter(),
+                  if (s.canGift)
+                    GestureDetector(
+                      onTap: _gift,
+                      child: Padding(
+                        padding: const EdgeInsetsDirectional.only(start: 8),
+                        child: _Wobble(
+                          child: Image.asset('assets/ui/gift_closed.webp', height: 46),
+                        ),
+                      ),
+                    ),
                   const Spacer(),
                   IconButton(
                     icon: Icon(
                       s.muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
                       color: Colors.white,
-                      size: 32,
+                      size: 30,
                     ),
                     onPressed: s.toggleMute,
                   ),
                   const LangButton(),
                   IconButton(
                     icon: const Icon(Icons.family_restroom_rounded,
-                        color: Colors.white, size: 30),
+                        color: Colors.white, size: 28),
                     onPressed: () async {
                       if (!await parentGate(context)) return;
                       if (!context.mounted) return;
-                      Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => const ParentsScreen()));
+                      _open(const ParentsScreen());
                     },
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              GoldTitle(s.t('appTitle'), size: 46),
-              if (s.canGift)
-                GestureDetector(
-                  onTap: _gift,
-                  child: Column(
-                    children: [
-                      _Wobble(
-                        child: Image.asset('assets/ui/gift_closed.webp', height: 80),
-                      ),
-                      Text(s.t('dailyGift'),
-                          style: const TextStyle(
-                              color: kGold, fontSize: 16, fontWeight: FontWeight.w900)),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 10),
+              GoldTitle(s.t('appTitle'), size: 38),
+              const SizedBox(height: 6),
               const GrowthCard(),
-              const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Critter(
-                      kind: s.buddy,
-                      height: 150,
-                      bubble: _greet(s),
-                      bubbleWidth: 140,
-                    ),
-                  ),
-                  Expanded(
-                    child: Critter(
-                      kind: s.rival,
-                      height: 140,
-                      bubble: _taunt ??= s.line('rivalTaunt'),
-                      bubbleWidth: 140,
-                    ),
-                  ),
-                ],
+              // الشخصيات تأخذ المساحة الباقية وتصغر في الشاشات الصغيرة
+              Expanded(
+                child: LayoutBuilder(builder: (context, c) {
+                  final h = (c.maxHeight - 56).clamp(50.0, 160.0).toDouble();
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Critter(
+                          kind: s.buddy,
+                          height: h,
+                          bubble: _greet(s),
+                          bubbleWidth: 140,
+                        ),
+                      ),
+                      Expanded(
+                        child: Critter(
+                          kind: s.rival,
+                          height: h * 0.93,
+                          bubble: _taunt ??= s.line('rivalTaunt'),
+                          bubbleWidth: 140,
+                        ),
+                      ),
+                    ],
+                  );
+                }),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
               Btn3D(
-                width: 260,
-                height: 70,
+                width: 280,
+                height: 68,
                 onTap: _play,
                 child: Text('▶  ${s.t('play')}',
                     style: const TextStyle(fontSize: 30)),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               Btn3D(
-                width: 260,
+                width: 280,
+                height: 54,
                 top: s.dailyDone ? kGreyTop : const Color(0xFFFFD95A),
                 bottom: s.dailyDone ? kGreyBottom : kGoldDark,
                 onTap: s.dailyDone ? null : _daily,
@@ -2407,61 +2529,30 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? '✓ ${s.t('dailyDone')}  🔥${s.dailyStreak}'
                     : '🌟 ${s.t('daily')}${s.dailyStreak > 0 ? '  🔥${s.dailyStreak}' : ''}'),
               ),
-              const SizedBox(height: 14),
-              Btn3D(
-                width: 260,
-                top: kVioletTop,
-                bottom: kVioletBottom,
-                onTap: _chooseBuddy,
-                child: Text('🦉🦊  ${s.t('chooseBuddy')}'),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _mini('🦉', s.t('chooseBuddy'), kVioletTop, kVioletBottom, _chooseBuddy),
+                  _mini('👑', s.t('shop'), const Color(0xFFF472B6), const Color(0xFFBE185D),
+                      () => _open(const ShopScreen())),
+                  _mini('⚔️', s.t('vsMode'), const Color(0xFFFF6B6B), const Color(0xFFB91C1C),
+                      () => _open(const VersusScreen())),
+                ],
               ),
-              const SizedBox(height: 14),
-              Btn3D(
-                width: 260,
-                top: const Color(0xFFF472B6),
-                bottom: const Color(0xFFBE185D),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const ShopScreen()),
-                ),
-                child: Text('👑  ${s.t('shop')}'),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _mini('🛂', '${s.t('passport')} ${s.stampCount}/${kStamps.length}',
+                      const Color(0xFF38BDF8), const Color(0xFF0369A1),
+                      () => _open(const PassportScreen())),
+                  _mini('🔑', s.t('secretCode'), kOrangeTop, kOrangeBottom, _secretCode),
+                  _mini('💬', s.t('challenge'), const Color(0xFF25D366), const Color(0xFF128C4A),
+                      _challenge),
+                ],
               ),
-              const SizedBox(height: 14),
-              Btn3D(
-                width: 260,
-                top: const Color(0xFFFF6B6B),
-                bottom: const Color(0xFFB91C1C),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const VersusScreen()),
-                ),
-                child: Text('⚔️  ${s.t('vsMode')}'),
-              ),
-              const SizedBox(height: 14),
-              Btn3D(
-                width: 260,
-                top: const Color(0xFF38BDF8),
-                bottom: const Color(0xFF0369A1),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => const PassportScreen()),
-                ),
-                child: Text('🛂  ${s.t('passport')}  ${s.stampCount}/${kStamps.length}'),
-              ),
-              const SizedBox(height: 14),
-              Btn3D(
-                width: 260,
-                top: kOrangeTop,
-                bottom: kOrangeBottom,
-                onTap: _secretCode,
-                child: Text('🔑  ${s.t('secretCode')}'),
-              ),
-              const SizedBox(height: 14),
-              Btn3D(
-                width: 260,
-                top: const Color(0xFF25D366),
-                bottom: const Color(0xFF128C4A),
-                onTap: _challenge,
-                child: Text('💬  ${s.t('challenge')}'),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 6),
             ],
           ),
         ),
@@ -2783,7 +2874,7 @@ class _PointingHandState extends State<PointingHand>
 // ============================================================
 class GrowthCard extends StatelessWidget {
   const GrowthCard({super.key});
-  static const List<int> _steps = [0, 5, 15, 25];
+  static const List<int> _steps = [0, 10, 40, 90];
 
   @override
   Widget build(BuildContext context) {
@@ -3224,25 +3315,150 @@ class TopBar extends StatelessWidget {
   }
 }
 
-class MapScreen extends StatelessWidget {
-  const MapScreen({super.key});
-  static const List<double> _xs = [-0.55, 0.0, 0.55, 0.0];
+/// كل العوالم: يفتح العالم التالي عندما يُهزم زعيم العالم السابق
+class WorldsScreen extends StatelessWidget {
+  const WorldsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final s = StoreScope.of(context);
     return Scaffold(
       body: GameBackground(
-        colors: const [Color(0xFF1F7A4D), Color(0xFF0A2A1C)],
-        image: 'assets/ui/forest_map.webp',
         child: Column(
           children: [
-            TopBar(title: '🌲 ${s.t('forest')}'),
+            TopBar(title: '🗺 ${s.t('worlds')}'),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                children: [
+                  for (var w = 0; w < kWorlds.length; w++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: PopIn(index: w, child: _WorldCard(world: w)),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WorldCard extends StatelessWidget {
+  const _WorldCard({required this.world});
+  final int world;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = StoreScope.of(context);
+    final key = kWorlds[world];
+    final first = world * kWorldSize + 1;
+    final open = s.unlocked(first);
+    var stars = 0;
+    var done = 0;
+    for (var i = first; i < first + kWorldSize; i++) {
+      stars += s.stars(i);
+      if (s.stars(i) > 0) done++;
+    }
+    final colors = kWorldColors[key]!;
+    return GestureDetector(
+      onTap: open
+          ? () {
+              Sfx.play('tap');
+              Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => MapScreen(world: world)));
+            }
+          : () => showSnack(context, s.t('finishPrev')),
+      child: Container(
+        height: 120,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: open ? colors : const [kGreyTop, kGreyBottom],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: open ? kGold : Colors.white24, width: 3),
+          boxShadow: const [
+            BoxShadow(color: Color(0x66000000), offset: Offset(0, 6), blurRadius: 8),
+          ],
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Opacity(
+              opacity: open ? 0.45 : 0.15,
+              child: Image.asset('assets/ui/${key}_map.webp',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Text(open ? kWorldIcon[key]! : '🔒',
+                      style: const TextStyle(fontSize: 54)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(s.t(key),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
+                        const SizedBox(height: 4),
+                        Text(
+                            open
+                                ? '⭐ $stars/${kWorldSize * 3}    ✅ $done/$kWorldSize'
+                                : s.t('finishPrev'),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                  ),
+                  if (done == kWorldSize) const Text('🏆', style: TextStyle(fontSize: 36)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MapScreen extends StatelessWidget {
+  const MapScreen({super.key, this.world = 0});
+  final int world;
+  static const List<double> _xs = [-0.55, 0.0, 0.55, 0.0];
+
+  @override
+  Widget build(BuildContext context) {
+    final s = StoreScope.of(context);
+    final key = kWorlds[world];
+    final first = world * kWorldSize + 1;
+    final boss = first + kWorldSize - 1;
+    return Scaffold(
+      body: GameBackground(
+        colors: kWorldColors[key]!,
+        image: 'assets/ui/${key}_map.webp',
+        child: Column(
+          children: [
+            TopBar(title: '${kWorldIcon[key]} ${s.t(key)}'),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 children: [
-                  for (var i = 1; i <= kLevels; i++)
+                  for (var i = first; i < boss; i++)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Align(
@@ -3260,19 +3476,8 @@ class MapScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        for (final w in const ['desert', 'sea', 'castle', 'space'])
-                          LockedWorld(name: s.t(w), emoji: kWorldEmoji[w]!),
-                      ],
-                    ),
-                  ),
+                  const SizedBox(height: 12),
+                  BossNode(level: boss, world: key),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -3280,6 +3485,54 @@ class MapScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// مرحلة الزعيم في آخر كل عالم
+class BossNode extends StatelessWidget {
+  const BossNode({super.key, required this.level, required this.world});
+  final int level;
+  final String world;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = StoreScope.of(context);
+    final open = s.unlocked(level);
+    final st = s.stars(level);
+    final fallback = Text(kWorldIcon[world]!, style: const TextStyle(fontSize: 90));
+    return Column(
+      children: [
+        _Wobble(
+          child: Opacity(
+            opacity: open ? 1 : 0.5,
+            child: Image.asset('assets/characters/boss_$world.webp',
+                height: 150, errorBuilder: (_, __, ___) => fallback),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Btn3D(
+          width: 220,
+          height: 64,
+          top: open ? const Color(0xFFFF6B6B) : kGreyTop,
+          bottom: open ? const Color(0xFFB91C1C) : kGreyBottom,
+          onTap: open
+              ? () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => PlayScreen(level: level)),
+                  )
+              : null,
+          child: Text(open ? '⚔️ ${s.t('boss')}' : '🔒 ${s.t('boss')}',
+              style: const TextStyle(fontSize: 24)),
+        ),
+        const SizedBox(height: 2),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < 3; i++)
+              Icon(Icons.star_rounded, size: 26, color: i < st ? kGold : Colors.white24),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -3360,7 +3613,7 @@ class LockedWorld extends StatelessWidget {
 // ============================================================
 // توليد الألغاز
 // ============================================================
-enum PType { diff, letter, count, seq, math, tf }
+enum PType { diff, letter, count, seq, math, tf, odd, numseq }
 
 /// كيف تختلف الخانة المختلفة: شكل آخر، أو أصغر، أو مقلوبة
 enum OddStyle { other, small, rotated }
@@ -3395,8 +3648,9 @@ class Puzzle {
 }
 
 class PuzzleGen {
-  PuzzleGen(this.level, this.lang, this.store);
+  PuzzleGen(this.level, this.lang, this.store, {this.world = 'forest'});
   final int level;
+  final String world;
   final String lang;
   final Store store;
   final Random _r = Random();
@@ -3410,12 +3664,18 @@ class PuzzleGen {
     if (level >= 4) avail.add(PType.seq);
     if (level >= 6) avail.add(PType.math);
     if (level >= 2) avail.add(PType.tf);
+    if (level >= 2) avail.add(PType.odd);
+    if (level >= 5) avail.add(PType.numseq);
     final n = questionsFor(level);
-    final o = List<PType>.from(avail)..shuffle(_r);
-    while (o.length < n) {
-      o.add(avail[_r.nextInt(avail.length)]);
+    // نوزّع الأنواع حتى لا يتكرر نفس النوع مرتين متتاليتين
+    final out = <PType>[];
+    var bag = <PType>[];
+    while (out.length < n) {
+      if (bag.isEmpty) bag = List<PType>.from(avail)..shuffle(_r);
+      var i = bag.indexWhere((t) => out.isEmpty || t != out.last);
+      if (i < 0) i = 0;
+      out.add(bag.removeAt(i));
     }
-    final out = o.take(n).toList()..shuffle(_r);
     return out;
   }
 
@@ -3428,7 +3688,49 @@ class PuzzleGen {
       PType.seq => _seq(),
       PType.math => _math(),
       PType.tf => _tf(),
+      PType.odd => _odd(),
+      PType.numseq => _numseq(),
     };
+  }
+
+  /// أيها لا ينتمي: ثلاثة من مجموعة وواحد من مجموعة أخرى
+  Puzzle _odd() {
+    final gi = store.draw('oddGroup', kGroups.length, _r);
+    final g = List<String>.from(kGroups[gi])..shuffle(_r);
+    var oi = gi;
+    while (oi == gi ||
+        (kLivingGroups.contains(gi) && kLivingGroups.contains(oi))) {
+      oi = _r.nextInt(kGroups.length);
+    }
+    final other = kGroups[oi][_r.nextInt(kGroups[oi].length)];
+    final count = level < 10 ? 3 : 4; // 3 أو 4 من نفس المجموعة
+    final list = [...g.take(count), other]..shuffle(_r);
+    return Puzzle(
+      type: PType.odd,
+      options: list,
+      correct: list.indexOf(other),
+    );
+  }
+
+  /// الرقم الناقص في سلسلة أرقام
+  Puzzle _numseq() {
+    final steps = level < 10 ? [1, 2] : (level < 20 ? [2, 3, 5] : [3, 4, 5, 10]);
+    final step = steps[_r.nextInt(steps.length)];
+    final down = level >= 15 && _r.nextBool();
+    const len = 5;
+    final start = down ? step * len + _r.nextInt(10) : _r.nextInt(level < 10 ? 5 : 20);
+    final nums = [for (var i = 0; i < len; i++) down ? start - i * step : start + i * step];
+    final miss = 1 + _r.nextInt(len - 2);
+    final value = nums[miss];
+    final expr = [for (var i = 0; i < len; i++) i == miss ? '?' : '${nums[i]}'].join('  ');
+    final opts = <int>{value, value + step, max(0, value - step), value + 1}.toList();
+    final three = <int>[value, ...opts.where((e) => e != value).take(2)]..shuffle(_r);
+    return Puzzle(
+      type: PType.numseq,
+      options: three.map((e) => '$e').toList(),
+      correct: three.indexOf(value),
+      expr: expr,
+    );
   }
 
   Puzzle _grid(String common, String odd, PType type, OddStyle style) {
@@ -3501,10 +3803,12 @@ class PuzzleGen {
       target = pair[0];
       other = pair[1];
     } else {
-      target = kCountEmojis[store.draw('count', kCountEmojis.length, _r)];
+      // نصف ألغاز العدّ من أشياء العالم الحالي
+      final pool = _r.nextBool() ? kWorldItems[world]! : kCountEmojis;
+      target = pool[store.draw('count_${pool.length}_$world', pool.length, _r)];
       other = target;
       while (other == target) {
-        other = kCountEmojis[_r.nextInt(kCountEmojis.length)];
+        other = pool[_r.nextInt(pool.length)];
       }
     }
     final cols = level < 10 ? 4 : 5;
@@ -3681,7 +3985,8 @@ class _PlayScreenState extends State<PlayScreen> {
     if (!_started) {
       _started = true;
       final st = StoreScope.read(context);
-      _gen = PuzzleGen(widget.level, st.lang, st);
+      _gen = PuzzleGen(diffLevel(widget.level), st.lang, st,
+          world: kWorlds[worldOf(widget.level)]);
       _newPuzzle();
       if (st.timeUp) {
         _break = true;
@@ -3931,6 +4236,8 @@ class _PlayScreenState extends State<PlayScreen> {
       PType.seq => s.t('qSeq'),
       PType.math => s.t('qMath'),
       PType.tf => s.t('qTF'),
+      PType.odd => s.t('qOdd'),
+      PType.numseq => s.t('qNumSeq'),
     };
   }
 
@@ -4135,9 +4442,13 @@ class _PlayScreenState extends State<PlayScreen> {
       PType.seq => _seqBoard(),
       PType.math => _mathBoard(),
       PType.tf => _mathBoard(full: true),
+      PType.numseq => _mathBoard(full: true),
+      PType.odd => const Center(
+          child: Text('🤔', style: TextStyle(fontSize: 90))),
       _ => _countBoard(),
     };
-    final isEmoji = p.type == PType.seq;
+    final isEmoji = p.type == PType.seq || p.type == PType.odd;
+    final many = p.options.length > 3;
     return Column(
       children: [
         Expanded(child: SingleChildScrollView(child: board)),
@@ -4150,8 +4461,8 @@ class _PlayScreenState extends State<PlayScreen> {
                 key: ValueKey('o$_pid-$i'),
                 index: i + 3,
                 child: Btn3D(
-                width: 88,
-                height: 64,
+                width: many ? 74 : 88,
+                height: many ? 74 : 64,
                 top: _okOption == i
                     ? const Color(0xFFFFD95A)
                     : (_wrongOpts.contains(i) ? kGreyTop : kVioletTop),
@@ -4212,6 +4523,7 @@ class _PlayScreenState extends State<PlayScreen> {
     return Scaffold(
       body: Stack(fit: StackFit.expand, children: [
       GameBackground(
+        colors: kWorldColors[kWorlds[worldOf(widget.level)]]!,
         child: Column(
           children: [
             // الشريط العلوي
