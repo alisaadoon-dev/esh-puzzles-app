@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   # shared_preferences و audioplayers يضيفهما ملف البناء تلقائياً
   url_launcher: ^6.3.0
+  google_fonts: ^6.2.1
+  sensors_plus: ^6.1.0
 
 dev_dependencies:
   flutter_test:
@@ -21,3 +23,6 @@ flutter:
   assets:
     - assets/characters/
     - assets/sounds/
+    - assets/ui/
+    - assets/acc/
+    - assets/voice/
