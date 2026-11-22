@@ -1,0 +1,74 @@
+name: Build game
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack game.zip
+        run: |
+          if [ -f game.zip ]; then unzip -o -q game.zip -d . ; fi
+          ls lib
+
+      - name: Copy character pictures from the repo root
+        run: |
+          mkdir -p assets/images
+          for n in owl owl_happy owl_sad fox fox_happy fox_sad crow hedgehog egg; do
+            for ext in png jpg jpeg webp; do
+              if [ -f "$n.$ext" ]; then cp "$n.$ext" assets/images/; fi
+            done
+          done
+          ls assets/images
+
+      - name: Generate voice lines (Gemini)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        timeout-minutes: 60
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "No GEMINI_API_KEY secret - building without voices"
+            exit 0
+          fi
+          python3 tools/make_voices.py || true
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add assets/voice
+          if ! git diff --cached --quiet; then
+            git commit -m "Add voice lines [skip ci]"
+            git push || true
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create Android project if missing
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --org com.eshpuzzles --project-name esh_puzzles .
+          fi
+
+      - run: flutter pub get
+
+      - run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esh-puzzles-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
