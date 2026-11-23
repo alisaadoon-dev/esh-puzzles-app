@@ -72,3 +72,11 @@ jobs:
         with:
           name: esh-puzzles-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publish APK with a direct link
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Version ${{ github.run_number }}
+          files: build/app/outputs/flutter-apk/app-release.apk
+          make_latest: true
