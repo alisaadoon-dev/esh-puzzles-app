@@ -74,6 +74,22 @@ jobs:
           echo 'android { packaging { jniLibs { useLegacyPackaging = true } } }' >> $F
           head -5 $M
 
+      - name: Fixed signing key
+        env:
+          KEY_PASS: ${{ secrets.KEY_PASS }}
+        run: |
+          if [ -n "$KEY_PASS" ] && [ -f signing/esh.p12 ]; then
+            mkdir -p ~/.android
+            rm -f ~/.android/debug.keystore
+            keytool -importkeystore -noprompt \
+              -srckeystore signing/esh.p12 -srcstoretype PKCS12 -srcstorepass "$KEY_PASS" -srcalias esh \
+              -destkeystore ~/.android/debug.keystore -deststoretype JKS \
+              -deststorepass android -destkeypass android -destalias androiddebugkey
+            echo "Signed with the fixed key"
+          else
+            echo "No KEY_PASS secret - using a temporary key"
+          fi
+
       - run: flutter pub get
 
       - run: flutter build apk --release
