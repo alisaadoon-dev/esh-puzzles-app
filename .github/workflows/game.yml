@@ -92,12 +92,23 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter build apk --release
+      # رقم النسخة يزيد مع كل بناء، حتى تثبت التحديثات فوق القديمة ويقبلها Play Store
+      - run: flutter build apk --release --build-number=$((1000 + ${{ github.run_number }}))
+
+      # ملف AAB: هو الذي يُرفع إلى Google Play
+      - run: flutter build appbundle --release --build-number=$((1000 + ${{ github.run_number }}))
+        continue-on-error: true
 
       - uses: actions/upload-artifact@v4
         with:
           name: esh-puzzles-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esh-puzzles-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: ignore
 
       - name: Publish APK with a direct link
         uses: softprops/action-gh-release@v2
