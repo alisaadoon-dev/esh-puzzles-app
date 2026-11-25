@@ -72,7 +72,40 @@ jobs:
           grep -q 'permission.INTERNET' $M || sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' $M
           F=$(ls android/app/build.gradle* | head -1)
           echo 'android { packaging { jniLibs { useLegacyPackaging = true } } }' >> $F
-          head -5 $M
+          # مكتبة الإشعارات تحتاج desugaring
+          if [[ "$F" == *.kts ]]; then
+            echo 'android { compileOptions { isCoreLibraryDesugaringEnabled = true } }' >> $F
+            echo 'dependencies { add("coreLibraryDesugaring", "com.android.tools:desugar_jdk_libs:2.1.4") }' >> $F
+          else
+            echo 'android { compileOptions { coreLibraryDesugaringEnabled true } }' >> $F
+            echo 'dependencies { coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4" }' >> $F
+          fi
+          # أذونات ومستقبلات التذكير اليومي
+          python3 - "$M" <<'PY'
+          import sys
+          p = sys.argv[1]
+          s = open(p).read()
+          perms = ['android.permission.POST_NOTIFICATIONS', 'android.permission.RECEIVE_BOOT_COMPLETED']
+          for perm in perms:
+              if perm not in s:
+                  s = s.replace('<application', '<uses-permission android:name="%s"/>\n    <application' % perm, 1)
+          rec = '''
+                  <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+                  <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+                      <intent-filter>
+                          <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                          <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                          <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                          <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+                      </intent-filter>
+                  </receiver>
+          '''
+          if 'ScheduledNotificationReceiver' not in s:
+              s = s.replace('</application>', rec + '    </application>', 1)
+          open(p, 'w').write(s)
+          PY
+          tail -5 $F
+          grep -n "permission\|receiver" $M
 
       - name: Fixed signing key
         env:
